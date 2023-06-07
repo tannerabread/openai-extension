@@ -16,6 +16,7 @@ let conversation: Message[] = [];
 async function callOpenAIAPI(userInput: string): Promise<string> {
   try {
     const requestPayload = {
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       max_tokens: 50,
     };
     const userMessage: Message = { role: "user", content: userInput };
