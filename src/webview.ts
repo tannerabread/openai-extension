@@ -1,7 +1,10 @@
 import * as vscode from "vscode";
+import * as md from "markdown-it";
 
 import { panel } from "./extension";
 import { conversation, addMessage } from "./conversation";
+
+const markdownParser = md();
 
 export function updateWebviewContent() {
   if (panel) {
@@ -13,7 +16,9 @@ export function getWebviewContent(): string {
   const messages = conversation
     .map(
       (message) =>
-        `<div class="message ${message.role}">${message.content}</div>`
+        `<div class="message ${message.role}">${markdownParser.render(
+          message.content
+        )}</div>`
     )
     .join("");
 
