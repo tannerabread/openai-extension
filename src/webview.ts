@@ -9,48 +9,109 @@ const markdownParser = md();
 export function updateWebviewContent() {
   if (panel) {
     panel.webview.html = getWebviewContent();
+    panel.webview.postMessage({ command: "webviewLoaded" });
   }
 }
 
 export function getWebviewContent(): string {
   const messages = conversation
-    .map(
-      (message) =>
-        `<div class="message ${message.role}">${markdownParser.render(
-          message.content
-        )}</div>`
-    )
+    .map((message) => {
+      let classes = ["message", message.role];
+      const messageClass = classes.join(" ");
+      return `<div class="${messageClass}">${markdownParser.render(
+        message.content
+      )}</div>`;
+    })
     .join("");
 
   const htmlcontent = `
     <html>
       <head>
         <style>
-        .conversation {
-          padding: 10px;
-        }
+          body {
+            background-color: #121212;
+            color: #d4d4d4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          }
 
-        .message {
-          margin-bottom: 10px;
-        }
-        
-        .system {
-          font-weight: bold;
-        }
-        
-        .user {
-          color: yellow;
-        }
-        
-        .assistant {
-          color: green;
-        }
+          .conversation {
+            padding: 10px;
+          }
+
+          .message {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding: 8px;
+          }
+
+          .message.user {
+            background-color: #4797AE;
+            color: white;
+          }
+
+          .message.assistant {
+            background-color: #212121;
+          }
+
+          .message.system {
+            background-color: #121212;
+            font-weight: bold;
+          }
+
+          @keyframes dots {
+            0%, 20% {
+              color: rgba(255, 255, 255, 0);
+              text-shadow: 0.25em 0 0 rgba(255, 255, 255, 0),
+                0.5em 0 0 rgba(255, 255, 255, 0);
+            }
+            40% {
+              color: #d4d4d4;
+              text-shadow: 0.25em 0 0 #d4d4d4, 0.5em 0 0 rgba(255, 255, 255, 0);
+            }
+            60% {
+              text-shadow: 0.25em 0 0 #d4d4d4, 0.5em 0 0 #d4d4d4;
+            }
+            80%, 100% {
+              text-shadow: 0.25em 0 0 #d4d4d4, 0.5em 0 0 #d4d4d4,
+                0.75em 0 0 #d4d4d4;
+            }
+          }
+
+          button {
+            background-color: #4797AE;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 8px 16px;
+            cursor: pointer;
+          }
+
+          input[type="text"] {
+            padding: 8px;
+            border-radius: 25px;
+            border: 1px solid #4797AE;
+            background-color: #121212;
+            color: #d4d4d4;
+          }
         </style>
       </head>
       <body>
         <div class="conversation">
           ${messages}
         </div>
+        <div>
+          <input type="text" id="user-input" placeholder="Type here" />
+          <button id="send-btn">Send</button>
+        </div>
+        <script>
+          const vscode = acquireVsCodeApi();
+          const sendBtn = document.getElementById("send-btn");
+          const userInput = document.getElementById("user-input");
+          sendBtn.addEventListener('click', () => {
+            const inputString = userInput.value;
+            vscode.postMessage({ command: "webviewInput", inputString });
+          });
+        </script>
       </body>
     </html>
   `;
@@ -58,14 +119,19 @@ export function getWebviewContent(): string {
   return htmlcontent;
 }
 
-export async function handleUserInputCommand() {
-  const userInput = await vscode.window.showInputBox({
-    prompt: "Enter your input",
-  });
-  if (userInput) {
+export async function handleUserInputCommand(inputString?: string) {
+  const promptInput =
+    inputString ??
+    (await vscode.window.showInputBox({
+      placeHolder: "How can I help you?",
+    })) ??
+    "";
+
+  if (promptInput) {
     try {
-      const apiResponse = await addMessage(userInput);
-      console.log(apiResponse);
+      const message = await addMessage(promptInput);
+      console.log(message);
+      updateWebviewContent();
     } catch (error) {
       console.error(error);
     }

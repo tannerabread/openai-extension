@@ -2,7 +2,12 @@ import * as vscode from "vscode";
 
 import { addMessage } from "./conversation";
 import { updateWebviewContent, handleUserInputCommand } from "./webview";
-import { createNewFile, readFile, writeFile, updateFile } from "./editor-util";
+import {
+  createAndOpenNewTextDocument,
+  readFile,
+  writeFile,
+  updateFile,
+} from "./editor-util";
 
 export let panel: vscode.WebviewPanel | undefined;
 export const subscriptions: vscode.Disposable[] = [];
@@ -18,7 +23,9 @@ export function activate(context: vscode.ExtensionContext) {
           "automationWebview",
           "Automation Webview",
           vscode.ViewColumn.Two,
-          {}
+          {
+            enableScripts: true,
+          }
         );
 
         panel.onDidDispose(() => {
@@ -27,16 +34,19 @@ export function activate(context: vscode.ExtensionContext) {
       }
 
       panel.webview.onDidReceiveMessage(async (message) => {
-        if (message.command === "handleUserInput") {
-          try {
-            const apiResponse = await addMessage(message.userInput);
-            panel?.webview.postMessage({
-              command: "handleAssistantResponse",
-              assistantResponse: apiResponse,
-            });
-          } catch (error) {
-            console.error(error);
-          }
+        switch (message.command) {
+          case "webviewInput":
+            try {
+              console.log('webviewInput message received');
+              const apiResponse = await addMessage(message.inputString);
+              panel?.webview.postMessage({
+                command: "handleAssistantResponse",
+                assistantResponse: apiResponse,
+              });
+              break;
+            } catch (error) {
+              console.error(error);
+            }
         }
       });
 
@@ -54,7 +64,10 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   subscriptions.push(
-    vscode.commands.registerCommand("automation.createNewFile", createNewFile)
+    vscode.commands.registerCommand(
+      "automation.createNewFile",
+      createAndOpenNewTextDocument
+    )
   );
   subscriptions.push(
     vscode.commands.registerCommand("automation.readFile", readFile)

@@ -34,9 +34,10 @@ export async function addMessage(userInput: string): Promise<string> {
 
     // temp conversation to add in context on requests without flooding the webview/chat window
     await updateContext();
+    const relevantContext = getRelevantContext();
     const tempConversation = [
       conversation[conversation.length - 1],
-      ...projectContext,
+      ...relevantContext,
       userMessage,
     ];
     console.log(tempConversation);
@@ -67,6 +68,27 @@ export async function addMessage(userInput: string): Promise<string> {
     console.error("Error in OpenAI API call:", error);
     throw error;
   }
+}
+
+function getRelevantContext(): Message[] {
+  const mostRecentMessage = getMostRecentMessage();
+  const filenames = extractFilenames(mostRecentMessage);
+
+  const relevantContext = projectContext.filter((message) =>
+    filenames.some((filename) => message.content.includes(filename))
+  );
+
+  if (relevantContext.length > 0) {
+    return relevantContext;
+  } else {
+    return projectContext;
+  }
+}
+
+function extractFilenames(message: string): string[] {
+  const fileNameRegex = /[\w-]+\.(ts|js|tsx|jsx|css|json)/g;
+  const matches = message.match(fileNameRegex);
+  return matches ? matches : [];
 }
 
 function getMostRecentMessage(): string {
