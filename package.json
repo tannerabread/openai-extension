@@ -15,11 +15,27 @@
     "commands": [
       {
         "command": "automation.openWebview",
-        "title": "Open Webview"
+        "title": "Automation: Open Webview"
       },
       {
         "command": "automation.handleUserInput",
-        "title": "Handle User Input"
+        "title": "Automation: Handle User Input"
+      },
+      {
+        "command": "automation.createNewFile",
+        "title": "Automation: Create New File"
+      },
+      {
+        "command": "automation.readFile",
+        "title": "Automation: Read File"
+      },
+      {
+        "command": "automation.writeFile",
+        "title": "Automation: Write File"
+      },
+      {
+        "command": "automation.updateFile",
+        "title": "Automation: Update File"
       }
     ]
   },

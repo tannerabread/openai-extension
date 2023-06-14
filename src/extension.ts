@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 
 import { addMessage } from "./conversation";
 import { updateWebviewContent, handleUserInputCommand } from "./webview";
+import { createNewFile, readFile, writeFile, updateFile } from "./editor-util";
 
 export let panel: vscode.WebviewPanel | undefined;
 export const subscriptions: vscode.Disposable[] = [];
@@ -50,6 +51,19 @@ export function activate(context: vscode.ExtensionContext) {
       "automation.handleUserInput",
       handleUserInputCommand
     )
+  );
+
+  subscriptions.push(
+    vscode.commands.registerCommand("automation.createNewFile", createNewFile)
+  );
+  subscriptions.push(
+    vscode.commands.registerCommand("automation.readFile", readFile)
+  );
+  subscriptions.push(
+    vscode.commands.registerCommand("automation.writeFile", writeFile)
+  );
+  subscriptions.push(
+    vscode.commands.registerCommand("automation.updateFile", updateFile)
   );
 
   context.subscriptions.push(...subscriptions);
