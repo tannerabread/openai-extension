@@ -32,10 +32,14 @@ export function getWebviewContent(): string {
             background-color: #121212;
             color: #d4d4d4;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 10px;
+            margin: 10px;
           }
 
           .conversation {
             padding: 10px;
+            overflow: auto;
+            height: 100%;
           }
 
           .message {
@@ -92,6 +96,7 @@ export function getWebviewContent(): string {
             border: 1px solid #4797AE;
             background-color: #121212;
             color: #d4d4d4;
+            width: 80%;
           }
         </style>
       </head>

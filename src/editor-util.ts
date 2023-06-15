@@ -45,29 +45,86 @@ export async function writeFile(): Promise<void> {
   }
 }
 
-export async function updateFile(): Promise<void> {
-  const editor = getActiveEditor();
-  if (!editor) {
-    return;
-  }
-  const functionName = getFunctionName();
-  const content = getFunction();
-  const edit = new vscode.WorkspaceEdit();
-  for (let line = 0; line < editor.document.lineCount; line++) {
-    const lineText = editor.document.lineAt(line);
-    const regex = new RegExp(`function\\s+${functionName}\\s*\\(`, "g");
-    if (lineText.text.match(regex)) {
-      const [start, end] = getFunctionBounds(line, editor.document);
-      edit.replace(
-        editor.document.uri,
-        new vscode.Range(start, end),
-        `${content}\n`
-      );
+export async function updateFile() {
+  const activeTextEditor: vscode.TextEditor | undefined =
+    vscode.window.activeTextEditor;
+  // const functionRegex = /(function.*\(.*\).*\{(.|\n)*?\n\})/g;
+
+  try {
+    const content: string = getFunction();
+
+    if (!activeTextEditor) {
+      return;
     }
+
+    const { document } = activeTextEditor;
+    const functionName: string = content.match(
+      /function\s+([a-zA-Z_$][0-9a-zA-Z_$]*)\s*\(/
+    )![1];
+
+    let edit = new vscode.WorkspaceEdit();
+
+    for (let line = 0; line < document.lineCount; line++) {
+      const lineText = document.lineAt(line);
+      let regex = new RegExp("function\\s+" + functionName + "\\s*\\(", "g");
+
+      if (lineText.text.match(regex)) {
+        const start = new vscode.Position(line, 0);
+        let endLine = line;
+        let bracketCounter = 0;
+
+        do {
+          let lineText = document.lineAt(endLine).text;
+          bracketCounter += (lineText.match(/{/g) || []).length;
+          bracketCounter -= (lineText.match(/}/g) || []).length;
+          endLine++;
+        } while (bracketCounter > 0 && endLine < document.lineCount);
+
+        const end = new vscode.Position(
+          endLine,
+          document.lineAt(endLine).text.length
+        );
+
+        edit.replace(
+          document.uri,
+          new vscode.Range(start, end),
+          content + "\n"
+        );
+      }
+    }
+
+    await vscode.workspace.applyEdit(edit);
+
+    if (activeTextEditor) {
+      vscode.commands.executeCommand("editor.action.formatDocument");
+    }
+  } catch (error) {
+    console.error(error);
   }
-  await vscode.workspace.applyEdit(edit);
-  vscode.commands.executeCommand("editor.action.formatDocument");
 }
+// export async function updateFile(): Promise<void> {
+//   const editor = getActiveEditor();
+//   if (!editor) {
+//     return;
+//   }
+//   const functionName = getFunctionName();
+//   const content = getFunction();
+//   const edit = new vscode.WorkspaceEdit();
+//   for (let line = 0; line < editor.document.lineCount; line++) {
+//     const lineText = editor.document.lineAt(line);
+//     const regex = new RegExp(`function\\s+${functionName}\\s*\\(`, "g");
+//     if (lineText.text.match(regex)) {
+//       const [start, end] = getFunctionBounds(line, editor.document);
+//       edit.replace(
+//         editor.document.uri,
+//         new vscode.Range(start, end),
+//         `${content}\n`
+//       );
+//     }
+//   }
+//   await vscode.workspace.applyEdit(edit);
+//   vscode.commands.executeCommand("editor.action.formatDocument");
+// }
 
 function getActiveEditor(): vscode.TextEditor | undefined {
   return vscode.window.activeTextEditor;

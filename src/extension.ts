@@ -37,12 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
         switch (message.command) {
           case "webviewInput":
             try {
-              console.log('webviewInput message received');
               const apiResponse = await addMessage(message.inputString);
-              panel?.webview.postMessage({
-                command: "handleAssistantResponse",
-                assistantResponse: apiResponse,
-              });
               break;
             } catch (error) {
               console.error(error);
