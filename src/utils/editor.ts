@@ -4,22 +4,66 @@ import { getCodeBlock, getFunction } from "../models/conversation";
 import { FUNCTION_REGEX_PATTERN, functionDefinitionPattern } from "./strings";
 import { getFilePath } from "./paths";
 import { uIConstants } from "../constants/ui";
+import { validFileType, validateUserInput } from "./validation";
 
 // needs util for printing file structures as "path/to/file" as well as multiline-to-single-line
 
 export async function createAndOpenNewFile(): Promise<void> {
-  const fileName = await vscode.window.showInputBox({
-    prompt: uIConstants.promptNewFilename,
+  const userInput = await vscode.window.showInputBox({
+    prompt: uIConstants.promptNewFile,
   });
 
-  if (fileName) {
-    const uri = getFilePath(fileName);
-    try {
-      await vscode.workspace.fs.writeFile(uri, new Uint8Array());
-      const doc = await vscode.workspace.openTextDocument(uri);
-      await vscode.window.showTextDocument(doc);
-    } catch (error) {
-      console.error(uIConstants.errorCreatingNewFile, error);
+  if (!userInput) {
+    return;
+  }
+
+  if (!validateUserInput(userInput)) {
+    vscode.window.showErrorMessage(uIConstants.errorInvalidFileName);
+    return;
+  }
+
+  const fileType = userInput.split(".").pop() || "ts";
+
+  if (!validFileType(fileType)) {
+    vscode.window.showErrorMessage(uIConstants.errorUnsupportedFileType);
+    return;
+  }
+
+  const uri = getFilePath(userInput);
+
+  try {
+    const fileExists = await vscode.workspace.fs.stat(uri).then(
+      () => true,
+      () => false
+    );
+    if (fileExists) {
+      const overwrite = await vscode.window.showQuickPick(["Yes", "No"], {
+        placeHolder: uIConstants.promptOverwriteFile,
+      });
+
+      if (!overwrite || overwrite === "No") {
+        return;
+      }
+
+      // rename old file before overwriting
+      const path = require("path");
+      const oldUri = vscode.Uri.file(
+        `${path.dirname(uri.path)}/${path.basename(
+          uri.path,
+          path.extname(uri.path)
+        )}.old${path.extname(uri.path)}`
+      );
+      await vscode.workspace.fs.rename(uri, oldUri);
+    }
+
+    await vscode.workspace.fs.writeFile(uri, new Uint8Array());
+    const doc = await vscode.workspace.openTextDocument(uri);
+    await vscode.window.showTextDocument(doc);
+  } catch (err) {
+    if ((err as { code?: string }).code === "EACCES") {
+      vscode.window.showErrorMessage(uIConstants.errorWritePermission);
+    } else {
+      console.error(uIConstants.errorCreatingNewFile, err);
     }
   }
 }
