@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { TextDecoder } from "util";
 
-import { Message, extractFilenames, USER_ROLE } from "./conversation";
+import { Message, extractFilenames, Role } from "./conversation";
 
 export const projectContext: Message[] = [];
 
@@ -10,7 +10,7 @@ export async function updateContext(): Promise<void> {
   projectContext.length = 0;
   projectContext.push(
     ...files.map((content) => ({
-      role: USER_ROLE,
+      role: Role.user,
       content,
     } as Message))
   );

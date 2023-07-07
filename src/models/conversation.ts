@@ -3,18 +3,20 @@ import { updateWebviewContent } from "../utils/webview";
 import { getRelevantContext, updateContext } from "./context";
 import { uIConstants } from "../constants/ui";
 
-export const SYSTEM_ROLE = "system";
-export const USER_ROLE = "user";
-export const ASSISTANT_ROLE = "assistant";
+export enum Role {
+  system = "system",
+  user = "user",
+  assistant = "assistant",
+}
 
 export type Message = {
-  role: typeof SYSTEM_ROLE | typeof USER_ROLE | typeof ASSISTANT_ROLE;
+  role: Role;
   content: string;
 };
 
 export const conversation: Message[] = [
   {
-    role: SYSTEM_ROLE,
+    role: Role.system,
     content: uIConstants.initialConversationMessage,
   },
 ];
@@ -23,12 +25,12 @@ export async function addMessage(userInput: string): Promise<string> {
   try {
     const prompt = await constructPrompt(userInput);
 
-    conversation.push({ role: USER_ROLE, content: userInput });
+    conversation.push({ role: Role.user, content: userInput });
     updateWebviewContent();
 
     const response = await getAssistance(prompt);
     conversation.push({
-      role: ASSISTANT_ROLE,
+      role: Role.assistant,
       content: response,
     });
     updateWebviewContent();
@@ -48,7 +50,7 @@ async function constructTempConversation(
   const tempConversation: Message[] = [
     conversation[conversation.length - 1],
     ...relevantContext,
-    { role: USER_ROLE, content: userInput },
+    { role: Role.user, content: userInput },
   ];
   return tempConversation;
 }
