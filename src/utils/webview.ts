@@ -1,15 +1,16 @@
 import * as vscode from "vscode";
 import * as md from "markdown-it";
 
-import { panel } from "./extension";
-import { conversation, addMessage } from "./conversation";
+import { panel } from "../extension";
+import { conversation, addMessage } from "../models/conversation";
+import { uIConstants } from "../constants/ui";
 
 const markdownParser = md();
 
 export function updateWebviewContent() {
   if (panel) {
     panel.webview.html = getWebviewContent();
-    panel.webview.postMessage({ command: "webviewLoaded" });
+    panel.webview.postMessage({ command: uIConstants.webviewLoaded });
   }
 }
 
@@ -124,11 +125,11 @@ export function getWebviewContent(): string {
   return htmlcontent;
 }
 
-export async function handleUserInputCommand(inputString?: string) {
+export async function handleUserInput(inputString?: string) {
   const promptInput =
     inputString ??
     (await vscode.window.showInputBox({
-      placeHolder: "How can I help you?",
+      placeHolder: uIConstants.promptUserInput,
     })) ??
     "";
 

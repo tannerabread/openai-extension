@@ -1,27 +1,29 @@
 import * as vscode from "vscode";
 
-import { addMessage } from "./conversation";
-import { updateWebviewContent, handleUserInputCommand } from "./webview";
+import { addMessage } from "./models/conversation";
+import { updateWebviewContent, handleUserInput } from "./utils/webview";
 import {
-  createAndOpenNewTextDocument,
+  createAndOpenNewFile,
   readFile,
   writeFile,
   updateFile,
-} from "./editor-util";
+} from "./utils/editor";
+import { commandConstants } from "./constants/commands";
+import { uIConstants } from "./constants/ui";
 
 export let panel: vscode.WebviewPanel | undefined;
 export const subscriptions: vscode.Disposable[] = [];
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('Congratulations, your extension "automation" is now active!');
+  console.log(uIConstants.extensionActivated);
 
   let disposable = vscode.commands.registerCommand(
-    "automation.openWebview",
+    commandConstants.openWebViewCommand,
     () => {
       if (!panel) {
         panel = vscode.window.createWebviewPanel(
-          "automationWebview",
-          "Automation Webview",
+          commandConstants.webviewName,
+          commandConstants.webviewTitle,
           vscode.ViewColumn.Two,
           {
             enableScripts: true,
@@ -35,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       panel.webview.onDidReceiveMessage(async (message) => {
         switch (message.command) {
-          case "webviewInput":
+          case commandConstants.webViewInput:
             try {
               const apiResponse = await addMessage(message.inputString);
               break;
@@ -53,25 +55,31 @@ export function activate(context: vscode.ExtensionContext) {
 
   subscriptions.push(
     vscode.commands.registerCommand(
-      "automation.handleUserInput",
-      handleUserInputCommand
+      commandConstants.handleUserInputCommand,
+      handleUserInput
     )
   );
 
   subscriptions.push(
     vscode.commands.registerCommand(
-      "automation.createNewFile",
-      createAndOpenNewTextDocument
+      commandConstants.createNewFileCommand,
+      createAndOpenNewFile
     )
   );
   subscriptions.push(
-    vscode.commands.registerCommand("automation.readFile", readFile)
+    vscode.commands.registerCommand(commandConstants.readFileCommand, readFile)
   );
   subscriptions.push(
-    vscode.commands.registerCommand("automation.writeFile", writeFile)
+    vscode.commands.registerCommand(
+      commandConstants.writeFileCommand,
+      writeFile
+    )
   );
   subscriptions.push(
-    vscode.commands.registerCommand("automation.updateFile", updateFile)
+    vscode.commands.registerCommand(
+      commandConstants.updateFileCommand,
+      updateFile
+    )
   );
 
   context.subscriptions.push(...subscriptions);

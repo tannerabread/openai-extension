@@ -1,6 +1,7 @@
-import { getAssistance } from "./openai";
-import { updateWebviewContent } from "./webview";
+import { getAssistance } from "../services/openai";
+import { updateWebviewContent } from "../utils/webview";
 import { getRelevantContext, updateContext } from "./context";
+import { uIConstants } from "../constants/ui";
 
 export const SYSTEM_ROLE = "system";
 export const USER_ROLE = "user";
@@ -14,7 +15,7 @@ export type Message = {
 export const conversation: Message[] = [
   {
     role: SYSTEM_ROLE,
-    content: "Hello, I am the assistant. How can I help you?",
+    content: uIConstants.initialConversationMessage,
   },
 ];
 
@@ -34,7 +35,7 @@ export async function addMessage(userInput: string): Promise<string> {
 
     return response;
   } catch (error) {
-    console.error("Error in OpenAI API call:", error);
+    console.error(uIConstants.errorAPI, error);
     throw error;
   }
 }
@@ -42,7 +43,8 @@ export async function addMessage(userInput: string): Promise<string> {
 async function constructTempConversation(
   userInput: string
 ): Promise<Message[]> {
-  const relevantContext: Message[] = getRelevantContext(userInput);
+  // const relevantContext: Message[] = getRelevantContext(userInput);
+  const relevantContext: Message[] = getRelevantContext("");
   const tempConversation: Message[] = [
     conversation[conversation.length - 1],
     ...relevantContext,
@@ -51,9 +53,12 @@ async function constructTempConversation(
   return tempConversation;
 }
 
-async function constructPrompt(userInput: string): Promise<{ messages: Message[], model: string }> {
+async function constructPrompt(
+  userInput: string
+): Promise<{ messages: Message[]; model: string }> {
   const requestPayload = {
     model: "gpt-3.5-turbo",
+    // model: "gpt-4",
   };
 
   await updateContext();
@@ -66,7 +71,7 @@ async function constructPrompt(userInput: string): Promise<{ messages: Message[]
 }
 
 export function extractFilenames(message: string): string[] {
-  const fileNameRegex = /[\w-]+\.(ts|js|tsx|jsx|css|json)/g;
+  const fileNameRegex = /[\w-/]+\.(tsx|jsx|ts|js|css|json)/g;
   const matches = message.match(fileNameRegex);
   return matches ? matches : [];
 }
@@ -79,7 +84,7 @@ export function getCodeBlock(): string {
   if (match) {
     return match[1].trim();
   } else {
-    throw new Error("No code block found");
+    throw new Error(uIConstants.errorCodeBlockNotFound);
   }
 }
 
@@ -91,7 +96,7 @@ export function getFunction(): string {
   if (match) {
     return match[0];
   } else {
-    throw new Error("No function name found");
+    throw new Error(uIConstants.errorFunctionNotFound);
   }
 }
 
@@ -100,6 +105,6 @@ function getMostRecentMessage(): string {
   if (mostRecentMessage) {
     return mostRecentMessage.content;
   } else {
-    throw new Error("No messages in conversation");
+    throw new Error(uIConstants.errorEmptyConversation);
   }
 }
